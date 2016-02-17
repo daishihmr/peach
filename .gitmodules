@@ -1,0 +1,9 @@
+[submodule "phina.js"]
+	path = phina.js
+	url = https://github.com/phi-jp/phina.js.git
+[submodule "bulletml.js"]
+	path = bulletml.js
+	url = https://github.com/daishihmr/bulletml.js.git
+[submodule "vox.js"]
+	path = vox.js
+	url = https://github.com/daishihmr/vox.js.git
