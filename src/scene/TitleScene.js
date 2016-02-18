@@ -5,11 +5,19 @@ phina.namespace(function() {
 
     init: function() {
       this.superInit({
-        backgroundColor: "black"
+        backgroundColor: "black",
+        width: W,
+        height: H,
       });
       peach.Label("Test")
-        .setPosition(320, 480)
+        .setPosition(this.gridX.span(8), this.gridY.span(6))
         .addChildTo(this);
+    },
+    
+    update: function(app) {
+      if (app.pointer.getPointingEnd()) {
+        this.exit();
+      }
     }
   });
 

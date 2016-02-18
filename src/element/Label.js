@@ -7,7 +7,7 @@ phina.namespace(function() {
       this.superInit({
         text: text,
         fontFamily: "main",
-        fontSize: 48,
+        fontSize: W * 0.08,
         fill: "white",
       }.$extend(options));
     },

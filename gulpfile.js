@@ -29,6 +29,8 @@ gulp.task('default', ['lib', 'concat']);
 gulp.task('lib', function() {
   fs.copy('./phina.js/build/phina.js', './_bundle/lib/phina.js');
   fs.copy('./bulletml.js/build/bulletml.js', './_bundle/lib/bulletml.js');
+  fs.copy('./vox.js/build/vox.js', './_bundle/lib/vox.js');
+  fs.copy('./three.js-r74/three.js', './_bundle/lib/three.js');
 });
 
 gulp.task('concat', function() {

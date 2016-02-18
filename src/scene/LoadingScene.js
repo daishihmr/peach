@@ -7,8 +7,13 @@ phina.namespace(function() {
       var assets = {};
       switch (param.assetType) {
         case "common":
-          assets.font = {
-            "main": "asset/Orbitron-Regular.ttf"
+          assets["font"] = {
+            "main": "asset/Orbitron-Regular.ttf",
+          };
+          assets["vox"] = {
+            "vox": "asset/test.vox",
+            "particle": "asset/particle.vox",
+            "player": "asset/p50.vox",
           };
           break;
         case "stage1":
@@ -24,8 +29,8 @@ phina.namespace(function() {
       }
 
       this.superInit({
-        width: 640,
-        height: 960,
+        width: W,
+        height: H,
         assets: assets
       });
     }

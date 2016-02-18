@@ -6,8 +6,8 @@ phina.namespace(function() {
     init: function() {
       this.superInit({
         fps: 60,
-        width: 640,
-        height: 960,
+        width: W,
+        height: H,
       });
       this.replaceScene(peach.MainSequance());
     }
