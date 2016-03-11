@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, height=device-height, user-scalable=no, initial-scale=1, maximum-scale=1">
+</head>
+
+<body>
+  <script src="../phina.js/build/phina.js"></script>
+  <script>
+  phina.globalize();
+
+  phina.define("MainScene", {
+    superClass: "DisplayScene",
+
+    init: function(options) {
+      var scene = this;
+      this.superInit({
+        width: 1000,
+        height: 300,
+      });
+
+      this.fs = Array.range(50).map(function(i) {
+        var r = Math.randfloat(0, 10);
+        var f = function(t) {
+          return Math.sin(t * r);
+        };
+        f.t = Math.randfloat(0, 1);
+        f.s = Math.randfloat(0, Math.PI * 2);
+        return f;
+      });
+
+      this.points = Array.range(1000).map(function(x) {
+        return CircleShape({
+            fill: "black",
+            stroke: null,
+            radius: 1,
+          })
+          .addChildTo(scene);
+      });
+    },
+
+    update: function(app) {
+      var scene = this;
+      var t = app.ticker.frame;
+      this.points.forEach(function(p, x) {
+        var y = 150;
+        scene.fs.forEach(function(f) {
+          y += f((x + f.t * t) * 0.005 + f.s) * 5;
+        });
+        p.setPosition(x, y);
+      });
+    }
+  });
+
+  GameApp({
+    startLabel: "main",
+    width: 1000,
+    height: 300
+  }).run();
+  </script>
+</body>
+
+</html>

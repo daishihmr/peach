@@ -1,5 +1,5 @@
-var W = 320 * 1;
-var H = 480 * 1;
+var W = 480 * 1;
+var H = 320 * 1;
 
 phina.main(function() {
   var app = peach.Application();
@@ -557,6 +557,85 @@ phina.namespace(function() {
 
 phina.namespace(function() {
 
+  phina.define("peach.Ground", {
+    superClass: "peach.ThreeElement",
+
+    init: function() {
+      var geometry = new THREE.Geometry();
+      var r = phina.util.Random(256);
+      var simplexNoise = new SimplexNoise(r);
+
+      for (var x = -100; x <= 100; x++) {
+        for (var z = -100; z <= 100; z++) {
+          var vertex = new THREE.Vector3();
+          vertex.x = x * 100;
+          vertex.y = 0;
+          vertex.y += simplexNoise.noise(x / 5, z / 5) * 100;
+          vertex.y += simplexNoise.noise(x / 20, z / 20) * 200;
+          vertex.y += simplexNoise.noise(x / 200, z / 200) * 800;
+          vertex.z = z * 100;
+          geometry.vertices.push(vertex);
+
+          var color = new THREE.Color().setHSL(0.3, 0.3, 0.8 + vertex.y / 400);
+          geometry.colors.push(color);
+        }
+      }
+
+      var material = peach.VoxAsset.createMaterial();
+      material.size = 60;
+      this.superInit(new THREE.Points(geometry, material));
+    },
+
+    update: function() {
+      if (20000 <= this.x) this.x += -40000;
+      else if (this.x < -20000) this.x += 40000;
+
+      if (20000 <= this.z) this.z += -40000;
+      else if (this.z < -20000) this.z += 40000;
+    },
+
+    _static: {
+      generate: function(scrollDirection, scrollSpeed) {
+        var parent = peach.ThreeElement().setRotation(0, scrollDirection, 0);
+        parent.scrollDirection = scrollDirection;
+        parent.scrollSpeed = scrollSpeed;
+
+        peach.Ground()
+          .setScale(1, 1, 1)
+          .setPosition(10000, 0, 10000)
+          .addChildTo(parent);
+        peach.Ground()
+          .setScale(-1, 1, 1)
+          .setPosition(-10000, 0, 10000)
+          .addChildTo(parent);
+        peach.Ground()
+          .setScale(1, 1, -1)
+          .setPosition(10000, 0, -10000)
+          .addChildTo(parent);
+        peach.Ground()
+          .setScale(-1, 1, -1)
+          .setPosition(-10000, 0, -10000)
+          .addChildTo(parent);
+
+        parent.on("enterframe", function() {
+          var d = this.scrollDirection;
+          var s = this.scrollSpeed;
+          this.children.forEach(function(c) {
+            c.x += Math.sin(-d) * s;
+            c.z += Math.cos(-d) * s;
+          })
+        });
+
+        return parent;
+      },
+    },
+
+  });
+
+});
+
+phina.namespace(function() {
+
   phina.define("peach.Label", {
     superClass: "phina.display.Label",
 
@@ -577,6 +656,23 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
+  
+  phina.define("peach.Player", {
+    superClass: "peach.Vox",
+    
+    init: function() {
+      this.superInit("player");
+    },
+    
+    update: function(app) {
+      var keyboard = app.keyboard;
+    }
+
+  });
+
+});
+
+phina.namespace(function() {
 
   phina.define("peach.ThreeElement", {
     superClass: "phina.app.Element",
@@ -586,6 +682,8 @@ phina.namespace(function() {
     init: function(threeObject) {
       this.superInit();
       this.$t = threeObject || new THREE.Object3D();
+      
+      this.$t.$p = this;
     },
 
     addChild: function(child) {
@@ -753,9 +851,9 @@ phina.namespace(function() {
           var p = palette[voxel.colorIndex];
 
           var vertex = new THREE.Vector3();
-          vertex.x = voxel.x * 30;
-          vertex.y = voxel.z * 30;
-          vertex.z = voxel.y * -30;
+          vertex.x = voxel.x * 10;
+          vertex.y = voxel.z * 10;
+          vertex.z = voxel.y * -10;
           geometry.vertices.push(vertex);
 
           var color = new THREE.Color();
@@ -764,8 +862,27 @@ phina.namespace(function() {
           color.b = p.b / 255;
           geometry.colors.push(color);
         }
-        geometry.center();
+        geometry.translate(data.size.x / -2 * 10, data.size.z / -2 * 10, data.size.y / +2 * 10);
 
+        var material = peach.VoxAsset.createMaterial();
+
+        resolve(new THREE.Points(geometry, material));
+      });
+    },
+
+    _static: {
+      createMaterial: function() {
+        return new THREE.PointsMaterial({
+          size: 15,
+          sizeAttenuation: true,
+          vertexColors: THREE.VertexColors,
+          fog: true,
+          transparent: false,
+          map: peach.VoxAsset.commonTexture,
+        });
+      },
+
+      commonTexture: (function() {
         var canvas = phina.graphics.Canvas().setSize(64, 64);
         canvas.strokeStyle = "rgb(180, 180, 180)";
         canvas.fillStyle = (function() {
@@ -778,17 +895,8 @@ phina.namespace(function() {
         canvas.strokeStyle = "rgb(180, 180, 180)";
         canvas.strokeRect(0, 0, 64, 64);
 
-        var material = new THREE.PointsMaterial({
-          size: 40,
-          sizeAttenuation: true,
-          vertexColors: THREE.VertexColors,
-          fog: true,
-          transparent: true,
-          map: new THREE.CanvasTexture(canvas.domElement),
-        });
-
-        resolve(new THREE.Points(geometry, material));
-      });
+        return new THREE.CanvasTexture(canvas.domElement);
+      })(),
     },
   });
 
@@ -814,6 +922,7 @@ phina.namespace(function() {
       this.material.fog = false;
       this.material.blending = THREE.AdditiveBlending;
       this.material.color = new THREE.Color(0xff6633);
+      this.material.transparent = true;
       
       this.tweener
         .set({
@@ -893,42 +1002,100 @@ phina.namespace(function() {
       this.light = this.threeLayer.light;
       this.threeRenderer = this.threeLayer.renderer;
 
-      this.scene.fog = new THREE.Fog(0x000022, 500, 8000);
+      this.scene.fog = new THREE.FogExp2(0x000022, 0.00020);
 
-      this.camera.position.set(0, 2000, -2000);
-
+      this.camera.position.set(
+        0,
+        Math.sin((70).toRadian()) * 3000,
+        Math.cos((70).toRadian()) * 3000
+      );
+      this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
 
       this.threeRenderer.setClearColor(0x000000);
 
       var self = this;
 
-      peach.Vox("player")
+      var player = peach.Vox("player")
         .addChildTo(this)
-        .on("enterframe", function() {
-          this.rotationY += 5;
+        .on("enterframe", function(e) {
+          var kb = e.app.keyboard;
+          var v = kb.getKeyDirection();
+          this.x += v.x * 40;
+          this.z += v.y * 40;
+          
+          this.rotationZ = Math.sin(e.app.ticker.frame * 0.01) * 80;
         });
+      player.$t.material.fog = false;
 
-      this.on("enterframe", function(e) {
-        if (e.app.ticker.frame % 60 !== 0) return;
+      // this.genAxis();
 
-        var pos = new THREE.Vector3(Math.randint(-1000, 1000), 0, Math.randint(-1000, 1000));
-        (20).times(function() {
-          var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
-            .normalize()
-            .multiplyScalar(20);
-          peach.Particle()
-            .setPosition(pos.x, pos.y, pos.z)
-            .addChildTo(self)
-            .on("enterframe", function(e) {
-              this.position.add(to);
-            });
-        });
+      // this.on("enterframe", function(e) {
+      //   if (e.app.ticker.frame % 60 !== 0) return;
+
+      //   var pos = new THREE.Vector3(Math.randint(-1000, 1000), 0, Math.randint(-1000, 1000));
+      //   (20).times(function() {
+      //     var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
+      //       .normalize()
+      //       .multiplyScalar(20);
+      //     peach.Particle()
+      //       .setPosition(pos.x, pos.y, pos.z)
+      //       .addChildTo(self)
+      //       .on("enterframe", function(e) {
+      //         this.position.add(to);
+      //       });
+      //   });
+      // });
+
+      peach.Ground.generate((-15).toRadian(), 30)
+        .setPosition(0, -2200, 0)
+        .addChildTo(this)
+        .tweener
+        .to({
+          scrollDirection: (0).toRadian()
+        }, 10000, "easeInOutBack")
+        .to({
+          scrollDirection: (290).toRadian()
+        }, 10000, "easeInOutBack")
+        .setLoop(true);
+    },
+
+    genAxis: function() {
+      var material, geometry;
+
+      material = new THREE.LineBasicMaterial({
+        color: 0xffffff
       });
+      geometry = new THREE.Geometry();
+      geometry.vertices.push(
+        new THREE.Vector3(-50000, 0, 0),
+        new THREE.Vector3(50000, 0, 0)
+      );
+      peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
 
+      material = new THREE.LineBasicMaterial({
+        color: 0xffffff
+      });
+      geometry = new THREE.Geometry();
+      geometry.vertices.push(
+        new THREE.Vector3(0, -50000, 0),
+        new THREE.Vector3(0, 50000, 0)
+      );
+      peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
+
+      material = new THREE.LineBasicMaterial({
+        color: 0xffffff
+      });
+      geometry = new THREE.Geometry();
+      geometry.vertices.push(
+        new THREE.Vector3(0, 0, -50000),
+        new THREE.Vector3(0, 0, 50000)
+      );
+      peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
     },
 
     update: function(app) {
+      // this.camera.position.set(Math.cos(app.ticker.frame * 0.001) * 1000, 1000, Math.sin(app.ticker.frame * 0.001) * 2000);
       this.camera.lookAt(this.cameraTarget.position);
     },
 
@@ -959,9 +1126,9 @@ phina.namespace(function() {
             "main": "asset/Orbitron-Regular.ttf",
           };
           assets["vox"] = {
-            "vox": "asset/test.vox",
+            "test": "asset/test.vox",
             "particle": "asset/particle.vox",
-            "player": "asset/p50.vox",
+            "player": "asset/player.vox",
           };
           break;
         case "stage1":
@@ -1092,7 +1259,7 @@ phina.namespace(function() {
     },
     
     update: function(app) {
-      if (app.pointer.getPointingEnd()) {
+      if (app.pointer.getPointingEnd() || app.keyboard.getKeyDown("z")) {
         this.exit();
       }
     }

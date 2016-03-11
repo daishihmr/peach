@@ -8,6 +8,8 @@ phina.namespace(function() {
     init: function(threeObject) {
       this.superInit();
       this.$t = threeObject || new THREE.Object3D();
+      
+      this.$t.$p = this;
     },
 
     addChild: function(child) {

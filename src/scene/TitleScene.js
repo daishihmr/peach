@@ -15,7 +15,7 @@ phina.namespace(function() {
     },
     
     update: function(app) {
-      if (app.pointer.getPointingEnd()) {
+      if (app.pointer.getPointingEnd() || app.keyboard.getKeyDown("z")) {
         this.exit();
       }
     }

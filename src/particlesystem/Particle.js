@@ -12,6 +12,7 @@ phina.namespace(function() {
       this.material.fog = false;
       this.material.blending = THREE.AdditiveBlending;
       this.material.color = new THREE.Color(0xff6633);
+      this.material.transparent = true;
       
       this.tweener
         .set({

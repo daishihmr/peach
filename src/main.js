@@ -1,5 +1,5 @@
-var W = 320 * 1;
-var H = 480 * 1;
+var W = 480 * 1;
+var H = 320 * 1;
 
 phina.main(function() {
   var app = peach.Application();

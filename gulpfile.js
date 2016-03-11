@@ -30,7 +30,8 @@ gulp.task('lib', function() {
   fs.copy('./phina.js/build/phina.js', './_bundle/lib/phina.js');
   fs.copy('./bulletml.js/build/bulletml.js', './_bundle/lib/bulletml.js');
   fs.copy('./vox.js/build/vox.js', './_bundle/lib/vox.js');
-  fs.copy('./three.js-r74/three.js', './_bundle/lib/three.js');
+  fs.copy('./libs/three.js', './_bundle/lib/three.js');
+  fs.copy('./libs/perlin-noise-simplex.js', './_bundle/lib/perlin-noise-simplex.js');
 });
 
 gulp.task('concat', function() {
