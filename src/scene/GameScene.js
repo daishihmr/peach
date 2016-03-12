@@ -40,8 +40,8 @@ phina.namespace(function() {
 
       this.camera.position.set(
         0,
-        Math.sin((70).toRadian()) * 3000,
-        Math.cos((70).toRadian()) * 3000
+        Math.sin((70).toRadian()) * 3500,
+        Math.cos((70).toRadian()) * 3500
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -50,47 +50,20 @@ phina.namespace(function() {
 
       var self = this;
 
-      var player = peach.Vox("player")
-        .addChildTo(this)
-        .on("enterframe", function(e) {
-          var kb = e.app.keyboard;
-          var v = kb.getKeyDirection();
-          this.x += v.x * 40;
-          this.z += v.y * 40;
-          
-          this.rotationZ = Math.sin(e.app.ticker.frame * 0.01) * 80;
-        });
-      player.$t.material.fog = false;
+      var player = peach.Player().addChildTo(this);
 
       // this.genAxis();
 
-      // this.on("enterframe", function(e) {
-      //   if (e.app.ticker.frame % 60 !== 0) return;
-
-      //   var pos = new THREE.Vector3(Math.randint(-1000, 1000), 0, Math.randint(-1000, 1000));
-      //   (20).times(function() {
-      //     var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
-      //       .normalize()
-      //       .multiplyScalar(20);
-      //     peach.Particle()
-      //       .setPosition(pos.x, pos.y, pos.z)
-      //       .addChildTo(self)
-      //       .on("enterframe", function(e) {
-      //         this.position.add(to);
-      //       });
-      //   });
-      // });
-
-      peach.Ground.generate((-15).toRadian(), 30)
+      peach.Ground.generate((-15).toRadian(), 90)
         .setPosition(0, -2200, 0)
         .addChildTo(this)
         .tweener
-        .to({
-          scrollDirection: (0).toRadian()
-        }, 10000, "easeInOutBack")
-        .to({
-          scrollDirection: (290).toRadian()
-        }, 10000, "easeInOutBack")
+        .by({
+          scrollDirection: (30).toRadian()
+        }, 3000, "easeInOutBack")
+        .by({
+          scrollDirection: (-90).toRadian()
+        }, 3000, "easeInOutBack")
         .setLoop(true);
     },
 

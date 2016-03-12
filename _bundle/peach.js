@@ -656,17 +656,83 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
-  
+  var TEMP_V0 = new THREE.Vector3();
+  var TEMP_V1 = new THREE.Vector3();
+  var TEMP_Q = new THREE.Quaternion();
+  var VECTOR3_Y = new THREE.Vector3(0, 1, 0);
+
   phina.define("peach.Player", {
-    superClass: "peach.Vox",
-    
+    superClass: "peach.ThreeElement",
+
+    direction: 0,
+
     init: function() {
-      this.superInit("player");
+      this.superInit();
+      this.body = peach.Vox("player").addChildTo(this);
+
+      this.body.$t.material.fog = false;
     },
-    
+
     update: function(app) {
       var keyboard = app.keyboard;
-    }
+      var v = keyboard.getKeyDirection();
+      if (v && v.lengthSquared()) {
+        if (!keyboard.getKey("z")) {
+          var ka = Math.atan2(v.x, v.y);
+          // var ka = Math.atan2(-v.x, -v.y);
+          var da = ka - this.direction;
+          da = -Math.PI + (da + Math.PI) % (Math.PI * 2);
+          if (da != 0) {
+            this.direction += Math.abs(da) / da * (5).toRadian();
+          }
+        }
+
+        this.x += v.x * 40;
+        this.z += v.y * 40;
+        this.body.rotationY = this.direction.toDegree();
+
+        TEMP_V0.set(v.x, 0, v.y).normalize();
+        TEMP_V1.set(v.x, -1, v.y).normalize();
+        var t = Math.acos(TEMP_V0.dot(TEMP_V1));
+        TEMP_Q.setFromAxisAngle(TEMP_V0.applyAxisAngle(VECTOR3_Y, Math.PI / 2), t);
+      } else {
+        TEMP_Q.set(0, 0, 0, 1);
+      }
+      this.$t.quaternion.slerp(TEMP_Q, 0.1);
+
+      if (keyboard.getKey("z") && app.ticker.frame % 3 === 0) {
+        var d = this.direction + Math.randfloat(-0.2, 0.2) - Math.PI / 2;
+        var px = -Math.cos(d) * 300;
+        var pz = Math.sin(d) * 300;
+        var p = peach.Vox("particle")
+          .setPosition(this.x, this.y, this.z)
+          .addChildTo(this.parent)
+          .on("enterframe", function() {
+            this.x += px;
+            this.z += pz;
+          });
+        p.$t.material.size = 100;
+        p.$t.material.blending = THREE.AdditiveBlending;
+        p.$t.material.fog = false;
+        p.tweener
+          .wait(180 + Math.randint(-8, 8))
+          .call(function() {
+            var pos = p.$t.position;
+            (20).times(function() {
+              var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
+                .normalize()
+                .multiplyScalar(20);
+              peach.Particle()
+                .setPosition(pos.x, pos.y, pos.z)
+                .addChildTo(p.parent)
+                .on("enterframe", function(e) {
+                  this.position.add(to);
+                });
+            });
+            p.remove();
+          });
+      }
+    },
 
   });
 
@@ -1006,8 +1072,8 @@ phina.namespace(function() {
 
       this.camera.position.set(
         0,
-        Math.sin((70).toRadian()) * 3000,
-        Math.cos((70).toRadian()) * 3000
+        Math.sin((70).toRadian()) * 3500,
+        Math.cos((70).toRadian()) * 3500
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -1016,47 +1082,20 @@ phina.namespace(function() {
 
       var self = this;
 
-      var player = peach.Vox("player")
-        .addChildTo(this)
-        .on("enterframe", function(e) {
-          var kb = e.app.keyboard;
-          var v = kb.getKeyDirection();
-          this.x += v.x * 40;
-          this.z += v.y * 40;
-          
-          this.rotationZ = Math.sin(e.app.ticker.frame * 0.01) * 80;
-        });
-      player.$t.material.fog = false;
+      var player = peach.Player().addChildTo(this);
 
       // this.genAxis();
 
-      // this.on("enterframe", function(e) {
-      //   if (e.app.ticker.frame % 60 !== 0) return;
-
-      //   var pos = new THREE.Vector3(Math.randint(-1000, 1000), 0, Math.randint(-1000, 1000));
-      //   (20).times(function() {
-      //     var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
-      //       .normalize()
-      //       .multiplyScalar(20);
-      //     peach.Particle()
-      //       .setPosition(pos.x, pos.y, pos.z)
-      //       .addChildTo(self)
-      //       .on("enterframe", function(e) {
-      //         this.position.add(to);
-      //       });
-      //   });
-      // });
-
-      peach.Ground.generate((-15).toRadian(), 30)
+      peach.Ground.generate((-15).toRadian(), 90)
         .setPosition(0, -2200, 0)
         .addChildTo(this)
         .tweener
-        .to({
-          scrollDirection: (0).toRadian()
-        }, 10000, "easeInOutBack")
-        .to({
-          scrollDirection: (290).toRadian()
-        }, 10000, "easeInOutBack")
+        .by({
+          scrollDirection: (30).toRadian()
+        }, 3000, "easeInOutBack")
+        .by({
+          scrollDirection: (-90).toRadian()
+        }, 3000, "easeInOutBack")
         .setLoop(true);
     },
 
