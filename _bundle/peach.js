@@ -20,7 +20,14 @@ phina.namespace(function() {
         height: H,
       });
       this.replaceScene(peach.MainSequance());
-    }
+    },
+
+    update: function() {
+      this.mouse.update();
+      this.touch.update();
+      this.touchList.update();
+      this.keyboard.update();
+    },
 
   });
 
@@ -562,21 +569,21 @@ phina.namespace(function() {
 
     init: function() {
       var geometry = new THREE.Geometry();
-      var r = phina.util.Random(256);
+      var r = phina.util.Random(652);
       var simplexNoise = new SimplexNoise(r);
 
       for (var x = -100; x <= 100; x++) {
         for (var z = -100; z <= 100; z++) {
           var vertex = new THREE.Vector3();
-          vertex.x = x * 100;
+          vertex.x = x * 200;
           vertex.y = 0;
-          vertex.y += simplexNoise.noise(x / 5, z / 5) * 100;
-          vertex.y += simplexNoise.noise(x / 20, z / 20) * 200;
+          vertex.y += simplexNoise.noise(x / 5, z / 5) * 200;
+          vertex.y += simplexNoise.noise(x / 20, z / 20) * 400;
           vertex.y += simplexNoise.noise(x / 200, z / 200) * 800;
-          vertex.z = z * 100;
+          vertex.z = z * 200;
           geometry.vertices.push(vertex);
 
-          var color = new THREE.Color().setHSL(0.3, 0.3, 0.8 + vertex.y / 400);
+          var color = new THREE.Color().setHSL(0.3, 0.6, 0.5 + vertex.y / 1000);
           geometry.colors.push(color);
         }
       }
@@ -587,11 +594,11 @@ phina.namespace(function() {
     },
 
     update: function() {
-      if (20000 <= this.x) this.x += -40000;
-      else if (this.x < -20000) this.x += 40000;
+      if (40000 <= this.x) this.x += -80000;
+      else if (this.x < -40000) this.x += 80000;
 
-      if (20000 <= this.z) this.z += -40000;
-      else if (this.z < -20000) this.z += 40000;
+      if (40000 <= this.z) this.z += -80000;
+      else if (this.z < -40000) this.z += 80000;
     },
 
     _static: {
@@ -602,19 +609,19 @@ phina.namespace(function() {
 
         peach.Ground()
           .setScale(1, 1, 1)
-          .setPosition(10000, 0, 10000)
+          .setPosition(20000, 0, 20000)
           .addChildTo(parent);
         peach.Ground()
           .setScale(-1, 1, 1)
-          .setPosition(-10000, 0, 10000)
+          .setPosition(-20000, 0, 20000)
           .addChildTo(parent);
         peach.Ground()
           .setScale(1, 1, -1)
-          .setPosition(10000, 0, -10000)
+          .setPosition(20000, 0, -20000)
           .addChildTo(parent);
         peach.Ground()
           .setScale(-1, 1, -1)
-          .setPosition(-10000, 0, -10000)
+          .setPosition(-20000, 0, -20000)
           .addChildTo(parent);
 
         parent.on("enterframe", function() {
@@ -660,6 +667,9 @@ phina.namespace(function() {
   var TEMP_V1 = new THREE.Vector3();
   var TEMP_Q = new THREE.Quaternion();
   var VECTOR3_Y = new THREE.Vector3(0, 1, 0);
+  var ROT_UNIT = (5).toRadian();
+
+  var GUN_POSITION = new THREE.Vector3();
 
   phina.define("peach.Player", {
     superClass: "peach.ThreeElement",
@@ -668,9 +678,15 @@ phina.namespace(function() {
 
     init: function() {
       this.superInit();
-      this.body = peach.Vox("player").addChildTo(this);
+      this.bodyParent = peach.ThreeElement().addChildTo(this);
+      this.body = peach.Vox("player").addChildTo(this.bodyParent);
+      this.bit = peach.Vox("bit").addChildTo(this);
 
       this.body.$t.material.fog = false;
+      this.bit.$t.material.fog = false;
+
+      this.speed = 0;
+      this.speedMax = 60;
     },
 
     update: function(app) {
@@ -683,55 +699,69 @@ phina.namespace(function() {
           var da = ka - this.direction;
           da = -Math.PI + (da + Math.PI) % (Math.PI * 2);
           if (da != 0) {
-            this.direction += Math.abs(da) / da * (5).toRadian();
+            if (Math.abs(da) > ROT_UNIT) {
+              this.direction += Math.abs(da) / da * ROT_UNIT;
+            } else {
+              this.direction = ka;
+            }
+            this.direction = -Math.PI + (this.direction + Math.PI) % (Math.PI * 2);
           }
         }
 
-        this.x += v.x * 40;
-        this.z += v.y * 40;
+        this.speed = Math.min(this.speed + 6.5, this.speedMax);
+
+        this.x += v.x * this.speed;
+        this.z += v.y * this.speed;
         this.body.rotationY = this.direction.toDegree();
+        this.bit.rotationY = this.direction.toDegree();
 
         TEMP_V0.set(v.x, 0, v.y).normalize();
-        TEMP_V1.set(v.x, -1, v.y).normalize();
-        var t = Math.acos(TEMP_V0.dot(TEMP_V1));
-        TEMP_Q.setFromAxisAngle(TEMP_V0.applyAxisAngle(VECTOR3_Y, Math.PI / 2), t);
+        TEMP_V1.set(v.x, -0.75, v.y).normalize();
+        var angle = Math.acos(TEMP_V0.dot(TEMP_V1));
+        TEMP_Q.setFromAxisAngle(TEMP_V0.applyAxisAngle(VECTOR3_Y, Math.PI / 2), angle);
       } else {
+        this.speed = 0;
         TEMP_Q.set(0, 0, 0, 1);
       }
-      this.$t.quaternion.slerp(TEMP_Q, 0.1);
+      this.bodyParent.$t.quaternion.slerp(TEMP_Q, 0.1);
 
-      if (keyboard.getKey("z") && app.ticker.frame % 3 === 0) {
-        var d = this.direction + Math.randfloat(-0.2, 0.2) - Math.PI / 2;
-        var px = -Math.cos(d) * 300;
-        var pz = Math.sin(d) * 300;
-        var p = peach.Vox("particle")
-          .setPosition(this.x, this.y, this.z)
-          .addChildTo(this.parent)
-          .on("enterframe", function() {
-            this.x += px;
-            this.z += pz;
-          });
-        p.$t.material.size = 100;
-        p.$t.material.blending = THREE.AdditiveBlending;
-        p.$t.material.fog = false;
-        p.tweener
-          .wait(180 + Math.randint(-8, 8))
-          .call(function() {
-            var pos = p.$t.position;
-            (20).times(function() {
-              var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
-                .normalize()
-                .multiplyScalar(20);
-              peach.Particle()
-                .setPosition(pos.x, pos.y, pos.z)
-                .addChildTo(p.parent)
-                .on("enterframe", function(e) {
-                  this.position.add(to);
-                });
-            });
-            p.remove();
-          });
+      if (keyboard.getKey("z") && app.ticker.frame % 5 === 0) {
+        this.fireShot(GUN_POSITION.set(-400, 0, -100));
+        this.fireShot(GUN_POSITION.set(+400, 0, -100));
       }
+    },
+
+    fireShot: function(gunPosition) {
+      // TODO
+
+      var d = this.direction + Math.randfloat(-0.1, 0.1) - Math.PI / 2;
+      var p = peach.Vox("bullet01")
+        .addChildTo(this.parent)
+        .on("enterframe", function() {
+          this.forward(300);
+        });
+
+      var m = this.bit.$t.matrixWorld;
+      p.$t.position.copy(gunPosition.applyMatrix4(m));
+      p.$t.rotation.setFromRotationMatrix(m);
+
+      p.tweener
+        .wait(200 + Math.randint(-8, 8))
+        .call(function() {
+          // var pos = p.$t.position;
+          // (20).times(function() {
+          //   var to = new THREE.Vector3(Math.randint(-1, 1), Math.randint(-1, 1), Math.randint(-1, 1))
+          //     .normalize()
+          //     .multiplyScalar(20);
+          //   peach.Particle()
+          //     .setPosition(pos.x, pos.y, pos.z)
+          //     .addChildTo(p.parent)
+          //     .on("enterframe", function(e) {
+          //       this.position.add(to);
+          //     });
+          // });
+          p.remove();
+        });
     },
 
   });
@@ -739,6 +769,8 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
+  
+  var TEMP_VECTOR = new THREE.Vector3();
 
   phina.define("peach.ThreeElement", {
     superClass: "phina.app.Element",
@@ -748,8 +780,15 @@ phina.namespace(function() {
     init: function(threeObject) {
       this.superInit();
       this.$t = threeObject || new THREE.Object3D();
-      
+
       this.$t.$p = this;
+    },
+
+    forward: function(distance) {
+      TEMP_VECTOR
+        .set(0, 0, -distance)
+        .applyQuaternion(this.$t.quaternion);
+      this.position.add(TEMP_VECTOR);
     },
 
     addChild: function(child) {
@@ -1068,12 +1107,12 @@ phina.namespace(function() {
       this.light = this.threeLayer.light;
       this.threeRenderer = this.threeLayer.renderer;
 
-      this.scene.fog = new THREE.FogExp2(0x000022, 0.00020);
+      this.scene.fog = new THREE.FogExp2(0x000044, 0.00012);
 
       this.camera.position.set(
         0,
-        Math.sin((70).toRadian()) * 3500,
-        Math.cos((70).toRadian()) * 3500
+        Math.sin((60).toRadian()) * 4000,
+        Math.cos((60).toRadian()) * 4000
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -1082,21 +1121,42 @@ phina.namespace(function() {
 
       var self = this;
 
-      var player = peach.Player().addChildTo(this);
+      this.player = peach.Player().addChildTo(this);
 
       // this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
-        .setPosition(0, -2200, 0)
-        .addChildTo(this)
-        .tweener
-        .by({
-          scrollDirection: (30).toRadian()
-        }, 3000, "easeInOutBack")
-        .by({
-          scrollDirection: (-90).toRadian()
-        }, 3000, "easeInOutBack")
-        .setLoop(true);
+        .setPosition(0, -1000, 0)
+        .addChildTo(this);
+
+      var test = phina.asset.AssetManager.get("vox", "bullet01");
+      test.material.fog = false;
+      test.material.blending = THREE.AdditiveBlending;
+      test.material.transparent = true;
+      test.material.opacity = 0.5;
+      var test = phina.asset.AssetManager.get("vox", "bullet02");
+      test.material.fog = false;
+      test.material.blending = THREE.AdditiveBlending;
+      test.material.transparent = true;
+      test.material.opacity = 0.5;
+      for (var x = -4; x < 4; x++) {
+        for (var y = -4; y < 4; y++) {
+          var p = peach.Vox("bullet02")
+            .setPosition(0, 0, -6000)
+            .addChildTo(self)
+            .on("enterframe", function() {
+              this.x += Math.cos(this.dir) * this.spd;
+              this.z -= Math.sin(this.dir) * this.spd;
+            });
+          p.dir = Math.randfloat(0, Math.PI * 2);
+          p.spd = Math.randint(50, 90);
+          p.rotationY = p.dir.toDegree()- 90;
+          p.tweener.wait(Math.randint(2000, 2800)).call(function() {
+            this.x = 0;
+            this.z = -6000;
+          }.bind(p)).setLoop(true);
+        }
+      }
     },
 
     genAxis: function() {
@@ -1165,9 +1225,13 @@ phina.namespace(function() {
             "main": "asset/Orbitron-Regular.ttf",
           };
           assets["vox"] = {
-            "test": "asset/test.vox",
-            "particle": "asset/particle.vox",
             "player": "asset/player.vox",
+            "bit": "asset/bit.vox",
+            "bullet01": "asset/bullet01.vox",
+            "bullet02": "asset/bullet02.vox",
+            "particle": "asset/particle.vox",
+            "p50": "asset/p50.vox",
+            "test": "asset/test.vox",
           };
           break;
         case "stage1":

@@ -10,7 +10,14 @@ phina.namespace(function() {
         height: H,
       });
       this.replaceScene(peach.MainSequance());
-    }
+    },
+
+    update: function() {
+      this.mouse.update();
+      this.touch.update();
+      this.touchList.update();
+      this.keyboard.update();
+    },
 
   });
 

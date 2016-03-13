@@ -11,9 +11,13 @@ phina.namespace(function() {
             "main": "asset/Orbitron-Regular.ttf",
           };
           assets["vox"] = {
-            "test": "asset/test.vox",
-            "particle": "asset/particle.vox",
             "player": "asset/player.vox",
+            "bit": "asset/bit.vox",
+            "bullet01": "asset/bullet01.vox",
+            "bullet02": "asset/bullet02.vox",
+            "particle": "asset/particle.vox",
+            "p50": "asset/p50.vox",
+            "test": "asset/test.vox",
           };
           break;
         case "stage1":

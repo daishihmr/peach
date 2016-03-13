@@ -1,4 +1,6 @@
 phina.namespace(function() {
+  
+  var TEMP_VECTOR = new THREE.Vector3();
 
   phina.define("peach.ThreeElement", {
     superClass: "phina.app.Element",
@@ -8,8 +10,15 @@ phina.namespace(function() {
     init: function(threeObject) {
       this.superInit();
       this.$t = threeObject || new THREE.Object3D();
-      
+
       this.$t.$p = this;
+    },
+
+    forward: function(distance) {
+      TEMP_VECTOR
+        .set(0, 0, -distance)
+        .applyQuaternion(this.$t.quaternion);
+      this.position.add(TEMP_VECTOR);
     },
 
     addChild: function(child) {

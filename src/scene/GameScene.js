@@ -36,12 +36,12 @@ phina.namespace(function() {
       this.light = this.threeLayer.light;
       this.threeRenderer = this.threeLayer.renderer;
 
-      this.scene.fog = new THREE.FogExp2(0x000022, 0.00020);
+      this.scene.fog = new THREE.FogExp2(0x000044, 0.00012);
 
       this.camera.position.set(
         0,
-        Math.sin((70).toRadian()) * 3500,
-        Math.cos((70).toRadian()) * 3500
+        Math.sin((60).toRadian()) * 4000,
+        Math.cos((60).toRadian()) * 4000
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -50,21 +50,42 @@ phina.namespace(function() {
 
       var self = this;
 
-      var player = peach.Player().addChildTo(this);
+      this.player = peach.Player().addChildTo(this);
 
       // this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
-        .setPosition(0, -2200, 0)
-        .addChildTo(this)
-        .tweener
-        .by({
-          scrollDirection: (30).toRadian()
-        }, 3000, "easeInOutBack")
-        .by({
-          scrollDirection: (-90).toRadian()
-        }, 3000, "easeInOutBack")
-        .setLoop(true);
+        .setPosition(0, -1000, 0)
+        .addChildTo(this);
+
+      var test = phina.asset.AssetManager.get("vox", "bullet01");
+      test.material.fog = false;
+      test.material.blending = THREE.AdditiveBlending;
+      test.material.transparent = true;
+      test.material.opacity = 0.5;
+      var test = phina.asset.AssetManager.get("vox", "bullet02");
+      test.material.fog = false;
+      test.material.blending = THREE.AdditiveBlending;
+      test.material.transparent = true;
+      test.material.opacity = 0.5;
+      for (var x = -4; x < 4; x++) {
+        for (var y = -4; y < 4; y++) {
+          var p = peach.Vox("bullet02")
+            .setPosition(0, 0, -6000)
+            .addChildTo(self)
+            .on("enterframe", function() {
+              this.x += Math.cos(this.dir) * this.spd;
+              this.z -= Math.sin(this.dir) * this.spd;
+            });
+          p.dir = Math.randfloat(0, Math.PI * 2);
+          p.spd = Math.randint(50, 90);
+          p.rotationY = p.dir.toDegree()- 90;
+          p.tweener.wait(Math.randint(2000, 2800)).call(function() {
+            this.x = 0;
+            this.z = -6000;
+          }.bind(p)).setLoop(true);
+        }
+      }
     },
 
     genAxis: function() {
