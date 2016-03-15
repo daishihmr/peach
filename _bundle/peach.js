@@ -12,6 +12,8 @@ phina.namespace(function() {
 
   phina.define("peach.Application", {
     superClass: "phina.display.CanvasApp",
+    
+    gamepadManager: null,
 
     init: function() {
       this.superInit({
@@ -19,6 +21,9 @@ phina.namespace(function() {
         width: W,
         height: H,
       });
+      
+      this.gamepadManager = phina.input.GamepadManager();
+      
       this.replaceScene(peach.MainSequance());
     },
 
@@ -27,6 +32,7 @@ phina.namespace(function() {
       this.touch.update();
       this.touchList.update();
       this.keyboard.update();
+      this.gamepadManager.update();
     },
 
   });
@@ -589,7 +595,8 @@ phina.namespace(function() {
       }
 
       var material = peach.VoxAsset.createMaterial();
-      material.size = 60;
+      material.size = 75;
+      material.fog = true;
       this.superInit(new THREE.Points(geometry, material));
     },
 
@@ -678,33 +685,40 @@ phina.namespace(function() {
 
     init: function() {
       this.superInit();
+
       this.bodyParent = peach.ThreeElement().addChildTo(this);
       this.body = peach.Vox("player").addChildTo(this.bodyParent);
       this.bit = peach.Vox("bit").addChildTo(this);
 
-      this.body.$t.material.fog = false;
-      this.bit.$t.material.fog = false;
+      this.body.$t.material.size = 15;
+      this.bit.$t.material.size = 15;
 
       this.speed = 0;
       this.speedMax = 60;
     },
 
+    _normalizeAngle: function(angle) {
+      return (angle + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+    },
+
     update: function(app) {
       var keyboard = app.keyboard;
+      var gp = app.gamepadManager.get(0);
+
       var v = keyboard.getKeyDirection();
-      if (v && v.lengthSquared()) {
+      // var v = gp.getStickDirection();
+      if (v && v.lengthSquared() > (0.5 * 0.5)) {
         if (!keyboard.getKey("z")) {
-          var ka = Math.atan2(v.x, v.y);
-          // var ka = Math.atan2(-v.x, -v.y);
-          var da = ka - this.direction;
-          da = -Math.PI + (da + Math.PI) % (Math.PI * 2);
-          if (da != 0) {
-            if (Math.abs(da) > ROT_UNIT) {
-              this.direction += Math.abs(da) / da * ROT_UNIT;
+          var toAngle = this._normalizeAngle(Math.atan2(v.x, v.y));
+          // var toAngle = Math.atan2(-v.x, -v.y);
+          var delta = this._normalizeAngle(toAngle - this.direction);
+          if (delta != 0) {
+            if (Math.abs(delta) > ROT_UNIT) {
+              this.direction += Math.abs(delta) / delta * ROT_UNIT;
             } else {
-              this.direction = ka;
+              this.direction = toAngle;
             }
-            this.direction = -Math.PI + (this.direction + Math.PI) % (Math.PI * 2);
+            this.direction = this._normalizeAngle(this.direction);
           }
         }
 
@@ -935,6 +949,8 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
+  
+  var SCALE = 75;
 
   phina.define("peach.VoxAsset", {
     superClass: "phina.asset.Asset",
@@ -944,8 +960,10 @@ phina.namespace(function() {
     },
 
     _load: function(resolve) {
+      var url = this.src.url;
+      var scale = SCALE * (this.src.scale || 1);
       var parser = new vox.Parser();
-      parser.parse(this.src).then(function(data) {
+      parser.parse(url).then(function(data) {
 
         var voxels = data.voxels;
         var palette = data.palette;
@@ -956,9 +974,9 @@ phina.namespace(function() {
           var p = palette[voxel.colorIndex];
 
           var vertex = new THREE.Vector3();
-          vertex.x = voxel.x * 10;
-          vertex.y = voxel.z * 10;
-          vertex.z = voxel.y * -10;
+          vertex.x = voxel.x * scale;
+          vertex.y = voxel.z * scale;
+          vertex.z = voxel.y * -scale;
           geometry.vertices.push(vertex);
 
           var color = new THREE.Color();
@@ -967,7 +985,7 @@ phina.namespace(function() {
           color.b = p.b / 255;
           geometry.colors.push(color);
         }
-        geometry.translate(data.size.x / -2 * 10, data.size.z / -2 * 10, data.size.y / +2 * 10);
+        geometry.translate(data.size.x / -2 * scale, data.size.z / -2 * scale, data.size.y / +2 * scale);
 
         var material = peach.VoxAsset.createMaterial();
 
@@ -978,10 +996,10 @@ phina.namespace(function() {
     _static: {
       createMaterial: function() {
         return new THREE.PointsMaterial({
-          size: 15,
+          size: 75,
           sizeAttenuation: true,
           vertexColors: THREE.VertexColors,
-          fog: true,
+          fog: false,
           transparent: false,
           map: peach.VoxAsset.commonTexture,
         });
@@ -1122,23 +1140,23 @@ phina.namespace(function() {
       var self = this;
 
       this.player = peach.Player().addChildTo(this);
+      
+      peach.Vox("misumi")
+        .setPosition(0, 0, -3000)
+        .addChildTo(this);
 
       // this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
-        .setPosition(0, -1000, 0)
+        .setPosition(0, -3000, 0)
         .addChildTo(this);
 
       var test = phina.asset.AssetManager.get("vox", "bullet01");
-      test.material.fog = false;
       test.material.blending = THREE.AdditiveBlending;
-      test.material.transparent = true;
-      test.material.opacity = 0.5;
+      // test.material.transparent = true;
       var test = phina.asset.AssetManager.get("vox", "bullet02");
-      test.material.fog = false;
       test.material.blending = THREE.AdditiveBlending;
-      test.material.transparent = true;
-      test.material.opacity = 0.5;
+      // test.material.transparent = true;
       for (var x = -4; x < 4; x++) {
         for (var y = -4; y < 4; y++) {
           var p = peach.Vox("bullet02")
@@ -1225,13 +1243,13 @@ phina.namespace(function() {
             "main": "asset/Orbitron-Regular.ttf",
           };
           assets["vox"] = {
-            "player": "asset/player.vox",
-            "bit": "asset/bit.vox",
-            "bullet01": "asset/bullet01.vox",
-            "bullet02": "asset/bullet02.vox",
-            "particle": "asset/particle.vox",
-            "p50": "asset/p50.vox",
-            "test": "asset/test.vox",
+            "player": { url: "asset/player.vox", scale: 0.1, },
+            "bit": { url: "asset/bit.vox", scale: 0.1, },
+            "bullet01": { url: "asset/bullet01.vox", scale: 1, },
+            "bullet02": { url: "asset/bullet02.vox", scale: 1, },
+            "particle": { url: "asset/particle.vox", scale: 1, },
+            "misumi": { url: "asset/misumi.vox", scale: 1, },
+            "test": { url: "asset/test.vox", scale: 1, },
           };
           break;
         case "stage1":

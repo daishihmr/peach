@@ -14,33 +14,40 @@ phina.namespace(function() {
 
     init: function() {
       this.superInit();
+
       this.bodyParent = peach.ThreeElement().addChildTo(this);
       this.body = peach.Vox("player").addChildTo(this.bodyParent);
       this.bit = peach.Vox("bit").addChildTo(this);
 
-      this.body.$t.material.fog = false;
-      this.bit.$t.material.fog = false;
+      this.body.$t.material.size = 15;
+      this.bit.$t.material.size = 15;
 
       this.speed = 0;
       this.speedMax = 60;
     },
 
+    _normalizeAngle: function(angle) {
+      return (angle + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+    },
+
     update: function(app) {
       var keyboard = app.keyboard;
+      var gp = app.gamepadManager.get(0);
+
       var v = keyboard.getKeyDirection();
-      if (v && v.lengthSquared()) {
+      // var v = gp.getStickDirection();
+      if (v && v.lengthSquared() > (0.5 * 0.5)) {
         if (!keyboard.getKey("z")) {
-          var ka = Math.atan2(v.x, v.y);
-          // var ka = Math.atan2(-v.x, -v.y);
-          var da = ka - this.direction;
-          da = -Math.PI + (da + Math.PI) % (Math.PI * 2);
-          if (da != 0) {
-            if (Math.abs(da) > ROT_UNIT) {
-              this.direction += Math.abs(da) / da * ROT_UNIT;
+          var toAngle = this._normalizeAngle(Math.atan2(v.x, v.y));
+          // var toAngle = Math.atan2(-v.x, -v.y);
+          var delta = this._normalizeAngle(toAngle - this.direction);
+          if (delta != 0) {
+            if (Math.abs(delta) > ROT_UNIT) {
+              this.direction += Math.abs(delta) / delta * ROT_UNIT;
             } else {
-              this.direction = ka;
+              this.direction = toAngle;
             }
-            this.direction = -Math.PI + (this.direction + Math.PI) % (Math.PI * 2);
+            this.direction = this._normalizeAngle(this.direction);
           }
         }
 

@@ -25,7 +25,8 @@ phina.namespace(function() {
       }
 
       var material = peach.VoxAsset.createMaterial();
-      material.size = 60;
+      material.size = 75;
+      material.fog = true;
       this.superInit(new THREE.Points(geometry, material));
     },
 

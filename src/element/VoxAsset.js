@@ -1,4 +1,6 @@
 phina.namespace(function() {
+  
+  var SCALE = 75;
 
   phina.define("peach.VoxAsset", {
     superClass: "phina.asset.Asset",
@@ -8,8 +10,10 @@ phina.namespace(function() {
     },
 
     _load: function(resolve) {
+      var url = this.src.url;
+      var scale = SCALE * (this.src.scale || 1);
       var parser = new vox.Parser();
-      parser.parse(this.src).then(function(data) {
+      parser.parse(url).then(function(data) {
 
         var voxels = data.voxels;
         var palette = data.palette;
@@ -20,9 +24,9 @@ phina.namespace(function() {
           var p = palette[voxel.colorIndex];
 
           var vertex = new THREE.Vector3();
-          vertex.x = voxel.x * 10;
-          vertex.y = voxel.z * 10;
-          vertex.z = voxel.y * -10;
+          vertex.x = voxel.x * scale;
+          vertex.y = voxel.z * scale;
+          vertex.z = voxel.y * -scale;
           geometry.vertices.push(vertex);
 
           var color = new THREE.Color();
@@ -31,7 +35,7 @@ phina.namespace(function() {
           color.b = p.b / 255;
           geometry.colors.push(color);
         }
-        geometry.translate(data.size.x / -2 * 10, data.size.z / -2 * 10, data.size.y / +2 * 10);
+        geometry.translate(data.size.x / -2 * scale, data.size.z / -2 * scale, data.size.y / +2 * scale);
 
         var material = peach.VoxAsset.createMaterial();
 
@@ -42,10 +46,10 @@ phina.namespace(function() {
     _static: {
       createMaterial: function() {
         return new THREE.PointsMaterial({
-          size: 15,
+          size: 75,
           sizeAttenuation: true,
           vertexColors: THREE.VertexColors,
-          fog: true,
+          fog: false,
           transparent: false,
           map: peach.VoxAsset.commonTexture,
         });

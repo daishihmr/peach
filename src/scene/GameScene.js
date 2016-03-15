@@ -51,23 +51,23 @@ phina.namespace(function() {
       var self = this;
 
       this.player = peach.Player().addChildTo(this);
+      
+      peach.Vox("misumi")
+        .setPosition(0, 0, -3000)
+        .addChildTo(this);
 
       // this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
-        .setPosition(0, -1000, 0)
+        .setPosition(0, -3000, 0)
         .addChildTo(this);
 
       var test = phina.asset.AssetManager.get("vox", "bullet01");
-      test.material.fog = false;
       test.material.blending = THREE.AdditiveBlending;
-      test.material.transparent = true;
-      test.material.opacity = 0.5;
+      // test.material.transparent = true;
       var test = phina.asset.AssetManager.get("vox", "bullet02");
-      test.material.fog = false;
       test.material.blending = THREE.AdditiveBlending;
-      test.material.transparent = true;
-      test.material.opacity = 0.5;
+      // test.material.transparent = true;
       for (var x = -4; x < 4; x++) {
         for (var y = -4; y < 4; y++) {
           var p = peach.Vox("bullet02")

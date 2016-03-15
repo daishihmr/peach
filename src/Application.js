@@ -2,6 +2,8 @@ phina.namespace(function() {
 
   phina.define("peach.Application", {
     superClass: "phina.display.CanvasApp",
+    
+    gamepadManager: null,
 
     init: function() {
       this.superInit({
@@ -9,6 +11,9 @@ phina.namespace(function() {
         width: W,
         height: H,
       });
+      
+      this.gamepadManager = phina.input.GamepadManager();
+      
       this.replaceScene(peach.MainSequance());
     },
 
@@ -17,6 +22,7 @@ phina.namespace(function() {
       this.touch.update();
       this.touchList.update();
       this.keyboard.update();
+      this.gamepadManager.update();
     },
 
   });
