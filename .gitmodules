@@ -1,6 +1,6 @@
 [submodule "phina.js"]
 	path = phina.js
-	url = https://github.com/phi-jp/phina.js.git
+	url = https://github.com/daishihmr/phina.js.git
 [submodule "bulletml.js"]
 	path = bulletml.js
 	url = https://github.com/daishihmr/bulletml.js.git
