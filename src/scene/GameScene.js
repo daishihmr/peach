@@ -1,5 +1,5 @@
 phina.namespace(function() {
-
+  
   phina.define("peach.GameScene", {
     superClass: "phina.display.DisplayScene",
 
@@ -36,12 +36,14 @@ phina.namespace(function() {
       this.light = this.threeLayer.light;
       this.threeRenderer = this.threeLayer.renderer;
 
-      this.scene.fog = new THREE.FogExp2(0x000044, 0.00012);
+      this.scene.fog = new THREE.FogExp2(0x000022, 0.00010);
 
+      this.camera.fov = 45;
+      this.camera.far = 15000;
       this.camera.position.set(
         0,
-        Math.sin((60).toRadian()) * 4000,
-        Math.cos((60).toRadian()) * 4000
+        Math.sin((60).toRadian()) * 8000,
+        Math.cos((60).toRadian()) * 8000
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -56,43 +58,20 @@ phina.namespace(function() {
         .setPosition(0, 0, -3000)
         .addChildTo(this);
 
-      // this.genAxis();
+      this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
         .setPosition(0, -3000, 0)
         .addChildTo(this);
-
-      var test = phina.asset.AssetManager.get("vox", "bullet01");
-      test.material.blending = THREE.AdditiveBlending;
-      // test.material.transparent = true;
-      var test = phina.asset.AssetManager.get("vox", "bullet02");
-      test.material.blending = THREE.AdditiveBlending;
-      // test.material.transparent = true;
-      for (var x = -4; x < 4; x++) {
-        for (var y = -4; y < 4; y++) {
-          var p = peach.Vox("bullet02")
-            .setPosition(0, 0, -6000)
-            .addChildTo(self)
-            .on("enterframe", function() {
-              this.x += Math.cos(this.dir) * this.spd;
-              this.z -= Math.sin(this.dir) * this.spd;
-            });
-          p.dir = Math.randfloat(0, Math.PI * 2);
-          p.spd = Math.randint(50, 90);
-          p.rotationY = p.dir.toDegree()- 90;
-          p.tweener.wait(Math.randint(2000, 2800)).call(function() {
-            this.x = 0;
-            this.z = -6000;
-          }.bind(p)).setLoop(true);
-        }
-      }
     },
 
     genAxis: function() {
       var material, geometry;
 
       material = new THREE.LineBasicMaterial({
-        color: 0xffffff
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.5,
       });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
@@ -101,9 +80,6 @@ phina.namespace(function() {
       );
       peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
 
-      material = new THREE.LineBasicMaterial({
-        color: 0xffffff
-      });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
         new THREE.Vector3(0, -50000, 0),
@@ -111,9 +87,6 @@ phina.namespace(function() {
       );
       peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
 
-      material = new THREE.LineBasicMaterial({
-        color: 0xffffff
-      });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
         new THREE.Vector3(0, 0, -50000),
@@ -123,7 +96,8 @@ phina.namespace(function() {
     },
 
     update: function(app) {
-      // this.camera.position.set(Math.cos(app.ticker.frame * 0.001) * 1000, 1000, Math.sin(app.ticker.frame * 0.001) * 2000);
+      this.camera.position.x = this.player.position.x * 0.25;
+      this.cameraTarget.position.x = this.player.position.x * 0.25;
       this.camera.lookAt(this.cameraTarget.position);
     },
 

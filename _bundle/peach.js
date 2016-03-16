@@ -670,11 +670,17 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
+
+  var X_MIN = -5200;
+  var X_MAX = +5200;
+  var Z_MIN = -4800;
+  var Z_MAX = +2800;
+
   var TEMP_V0 = new THREE.Vector3();
   var TEMP_V1 = new THREE.Vector3();
   var TEMP_Q = new THREE.Quaternion();
   var VECTOR3_Y = new THREE.Vector3(0, 1, 0);
-  var ROT_UNIT = (5).toRadian();
+  var ROT_UNIT = (6).toRadian();
 
   var GUN_POSITION = new THREE.Vector3();
 
@@ -689,9 +695,6 @@ phina.namespace(function() {
       this.bodyParent = peach.ThreeElement().addChildTo(this);
       this.body = peach.Vox("player").addChildTo(this.bodyParent);
       this.bit = peach.Vox("bit").addChildTo(this);
-
-      this.body.$t.material.size = 15;
-      this.bit.$t.material.size = 15;
 
       this.speed = 0;
       this.speedMax = 60;
@@ -710,6 +713,7 @@ phina.namespace(function() {
       if (v && v.lengthSquared() > (0.5 * 0.5)) {
         if (!keyboard.getKey("z")) {
           var toAngle = this._normalizeAngle(Math.atan2(v.x, v.y));
+          toAngle = Math.clamp(toAngle, Math.PI / -2, Math.PI / 2);
           // var toAngle = Math.atan2(-v.x, -v.y);
           var delta = this._normalizeAngle(toAngle - this.direction);
           if (delta != 0) {
@@ -724,19 +728,29 @@ phina.namespace(function() {
 
         this.speed = Math.min(this.speed + 6.5, this.speedMax);
 
-        this.x += v.x * this.speed;
-        this.z += v.y * this.speed;
-        this.body.rotationY = this.direction.toDegree();
-        this.bit.rotationY = this.direction.toDegree();
+        this.x = Math.clamp(this.x + v.x * this.speed, X_MIN, X_MAX);
+        this.z = Math.clamp(this.z + v.y * this.speed, Z_MIN, Z_MAX);
 
         TEMP_V0.set(v.x, 0, v.y).normalize();
-        TEMP_V1.set(v.x, -0.75, v.y).normalize();
+        TEMP_V1.set(v.x, -1.0, v.y).normalize();
         var angle = Math.acos(TEMP_V0.dot(TEMP_V1));
         TEMP_Q.setFromAxisAngle(TEMP_V0.applyAxisAngle(VECTOR3_Y, Math.PI / 2), angle);
       } else {
+        if (!keyboard.getKey("z")) {
+          if (this.direction != 0) {
+            var abs = Math.abs(this.direction);
+            if (abs < ROT_UNIT) {
+              this.direction = 0;
+            } else {
+              this.direction -= abs / this.direction * ROT_UNIT;
+            }
+          }
+        }
         this.speed = 0;
         TEMP_Q.set(0, 0, 0, 1);
       }
+      this.body.rotationY = this.direction.toDegree();
+      this.bit.rotationY = this.direction.toDegree();
       this.bodyParent.$t.quaternion.slerp(TEMP_Q, 0.1);
 
       if (keyboard.getKey("z") && app.ticker.frame % 5 === 0) {
@@ -749,7 +763,7 @@ phina.namespace(function() {
       // TODO
 
       var d = this.direction + Math.randfloat(-0.1, 0.1) - Math.PI / 2;
-      var p = peach.Vox("bullet01")
+      var p = peach.Vox("bullet04")
         .addChildTo(this.parent)
         .on("enterframe", function() {
           this.forward(300);
@@ -760,7 +774,7 @@ phina.namespace(function() {
       p.$t.rotation.setFromRotationMatrix(m);
 
       p.tweener
-        .wait(200 + Math.randint(-8, 8))
+        .wait(150)
         .call(function() {
           // var pos = p.$t.position;
           // (20).times(function() {
@@ -950,7 +964,7 @@ phina.namespace(function() {
 
 phina.namespace(function() {
   
-  var SCALE = 75;
+  var SCALE = 100;
 
   phina.define("peach.VoxAsset", {
     superClass: "phina.asset.Asset",
@@ -996,7 +1010,7 @@ phina.namespace(function() {
     _static: {
       createMaterial: function() {
         return new THREE.PointsMaterial({
-          size: 75,
+          size: SCALE * 2.0,
           sizeAttenuation: true,
           vertexColors: THREE.VertexColors,
           fog: false,
@@ -1007,7 +1021,6 @@ phina.namespace(function() {
 
       commonTexture: (function() {
         var canvas = phina.graphics.Canvas().setSize(64, 64);
-        canvas.strokeStyle = "rgb(180, 180, 180)";
         canvas.fillStyle = (function() {
           var grad = canvas.context.createLinearGradient(0, 0, 64, 64);
           grad.addColorStop(0.0, "rgb(255, 255, 255)");
@@ -1015,8 +1028,6 @@ phina.namespace(function() {
           return grad;
         })();
         canvas.fillRect(0, 0, 64, 64);
-        canvas.strokeStyle = "rgb(180, 180, 180)";
-        canvas.strokeRect(0, 0, 64, 64);
 
         return new THREE.CanvasTexture(canvas.domElement);
       })(),
@@ -1088,7 +1099,7 @@ phina.namespace(function() {
 });
 
 phina.namespace(function() {
-
+  
   phina.define("peach.GameScene", {
     superClass: "phina.display.DisplayScene",
 
@@ -1125,12 +1136,14 @@ phina.namespace(function() {
       this.light = this.threeLayer.light;
       this.threeRenderer = this.threeLayer.renderer;
 
-      this.scene.fog = new THREE.FogExp2(0x000044, 0.00012);
+      this.scene.fog = new THREE.FogExp2(0x000022, 0.00010);
 
+      this.camera.fov = 45;
+      this.camera.far = 15000;
       this.camera.position.set(
         0,
-        Math.sin((60).toRadian()) * 4000,
-        Math.cos((60).toRadian()) * 4000
+        Math.sin((60).toRadian()) * 8000,
+        Math.cos((60).toRadian()) * 8000
       );
       this.camera.updateProjectionMatrix();
       this.cameraTarget = peach.ThreeElement().addChildTo(this);
@@ -1145,43 +1158,20 @@ phina.namespace(function() {
         .setPosition(0, 0, -3000)
         .addChildTo(this);
 
-      // this.genAxis();
+      this.genAxis();
 
       peach.Ground.generate((-15).toRadian(), 90)
         .setPosition(0, -3000, 0)
         .addChildTo(this);
-
-      var test = phina.asset.AssetManager.get("vox", "bullet01");
-      test.material.blending = THREE.AdditiveBlending;
-      // test.material.transparent = true;
-      var test = phina.asset.AssetManager.get("vox", "bullet02");
-      test.material.blending = THREE.AdditiveBlending;
-      // test.material.transparent = true;
-      for (var x = -4; x < 4; x++) {
-        for (var y = -4; y < 4; y++) {
-          var p = peach.Vox("bullet02")
-            .setPosition(0, 0, -6000)
-            .addChildTo(self)
-            .on("enterframe", function() {
-              this.x += Math.cos(this.dir) * this.spd;
-              this.z -= Math.sin(this.dir) * this.spd;
-            });
-          p.dir = Math.randfloat(0, Math.PI * 2);
-          p.spd = Math.randint(50, 90);
-          p.rotationY = p.dir.toDegree()- 90;
-          p.tweener.wait(Math.randint(2000, 2800)).call(function() {
-            this.x = 0;
-            this.z = -6000;
-          }.bind(p)).setLoop(true);
-        }
-      }
     },
 
     genAxis: function() {
       var material, geometry;
 
       material = new THREE.LineBasicMaterial({
-        color: 0xffffff
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.5,
       });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
@@ -1190,9 +1180,6 @@ phina.namespace(function() {
       );
       peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
 
-      material = new THREE.LineBasicMaterial({
-        color: 0xffffff
-      });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
         new THREE.Vector3(0, -50000, 0),
@@ -1200,9 +1187,6 @@ phina.namespace(function() {
       );
       peach.ThreeElement(new THREE.Line(geometry, material)).addChildTo(this);
 
-      material = new THREE.LineBasicMaterial({
-        color: 0xffffff
-      });
       geometry = new THREE.Geometry();
       geometry.vertices.push(
         new THREE.Vector3(0, 0, -50000),
@@ -1212,7 +1196,8 @@ phina.namespace(function() {
     },
 
     update: function(app) {
-      // this.camera.position.set(Math.cos(app.ticker.frame * 0.001) * 1000, 1000, Math.sin(app.ticker.frame * 0.001) * 2000);
+      this.camera.position.x = this.player.position.x * 0.25;
+      this.cameraTarget.position.x = this.player.position.x * 0.25;
       this.camera.lookAt(this.cameraTarget.position);
     },
 
@@ -1247,6 +1232,8 @@ phina.namespace(function() {
             "bit": { url: "asset/bit.vox", scale: 0.1, },
             "bullet01": { url: "asset/bullet01.vox", scale: 1, },
             "bullet02": { url: "asset/bullet02.vox", scale: 1, },
+            "bullet03": { url: "asset/bullet03.vox", scale: 1, },
+            "bullet04": { url: "asset/bullet04.vox", scale: 1, },
             "particle": { url: "asset/particle.vox", scale: 1, },
             "misumi": { url: "asset/misumi.vox", scale: 1, },
             "test": { url: "asset/test.vox", scale: 1, },
@@ -1269,7 +1256,23 @@ phina.namespace(function() {
         height: H,
         assets: assets
       });
-    }
+    },
+    
+    onloaded: function() {
+      var asset;
+      
+      asset = phina.asset.AssetManager.get("vox", "bullet01");
+      asset.material.blending = THREE.AdditiveBlending;
+
+      asset = phina.asset.AssetManager.get("vox", "bullet02");
+      asset.material.blending = THREE.AdditiveBlending;
+
+      asset = phina.asset.AssetManager.get("vox", "player");
+      asset.material.size = 15;
+
+      asset = phina.asset.AssetManager.get("vox", "bit");
+      asset.material.size = 15;
+    },
 
   });
 

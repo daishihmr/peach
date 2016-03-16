@@ -1,6 +1,6 @@
 phina.namespace(function() {
   
-  var SCALE = 75;
+  var SCALE = 100;
 
   phina.define("peach.VoxAsset", {
     superClass: "phina.asset.Asset",
@@ -46,7 +46,7 @@ phina.namespace(function() {
     _static: {
       createMaterial: function() {
         return new THREE.PointsMaterial({
-          size: 75,
+          size: SCALE * 2.0,
           sizeAttenuation: true,
           vertexColors: THREE.VertexColors,
           fog: false,
@@ -57,7 +57,6 @@ phina.namespace(function() {
 
       commonTexture: (function() {
         var canvas = phina.graphics.Canvas().setSize(64, 64);
-        canvas.strokeStyle = "rgb(180, 180, 180)";
         canvas.fillStyle = (function() {
           var grad = canvas.context.createLinearGradient(0, 0, 64, 64);
           grad.addColorStop(0.0, "rgb(255, 255, 255)");
@@ -65,8 +64,6 @@ phina.namespace(function() {
           return grad;
         })();
         canvas.fillRect(0, 0, 64, 64);
-        canvas.strokeStyle = "rgb(180, 180, 180)";
-        canvas.strokeRect(0, 0, 64, 64);
 
         return new THREE.CanvasTexture(canvas.domElement);
       })(),
